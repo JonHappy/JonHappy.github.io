@@ -1,0 +1,194 @@
+button#arrow_v{
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -ms-user-select: none;
+}
+
+#div1{
+    position: absolute;
+    top: var(--pix_max_top);
+    left: var(--pix_max_left);
+    width: var(--pix_max_width);
+    height: var(--pix_max_height);
+    border: 1px solid #c0c0c0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#v_line{
+    border: none;
+    background-color: red;
+    color: red;
+    height: 1px;
+    z-index: 401;
+    width: var(--pix_max_height);
+    transform: rotate(90deg) translateX(50%);
+    position: absolute;
+    left: calc(var(--Cx) - var(--pix_max_height) / 2  + var(--crop_width) / 2 - 1px);
+    margin: 0px;
+    top: 0;
+    -webkit-margin-before: 1px;
+    -webkit-margin-after: 1px;
+    -webkit-margin-start: auto;
+    -webkit-margin-end: auto;
+    cursor:pointer
+}
+
+#crop{
+    pointer-events:none;
+    background: transparent;
+    position: absolute;
+    border: 1px #000000 solid;
+    z-index: 400;
+    box-sizing:border-box;
+    left: calc(var(--Cx) - (var(--crop_width) / 2) - 1px);
+    top: calc(var(--Cy) - (var(--crop_height) / 2) - 1px);
+    width: var(--crop_width);
+    height: var(--crop_height);
+}
+
+#div1 img{
+    position: relative;
+}
+
+
+
+
+
+#crop>div{
+    pointer-events:none;
+    background: rgba(226, 56, 56, 0);
+    position: relative;
+    border:1px dashed  #ffffff;
+    height: 100% !important;
+    width: 100% !important;
+    z-index: 399;margin:-1px;
+}
+
+
+
+#cropped{
+    position: absolute;
+    top: 10px;
+    left: calc( var(--pix_max_left) + var(--pix_max_width) + 30px);
+    /* width: calc(100% - 770px); */
+    display: inline-flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+}
+
+#cropped div{
+    align-self: flex-start;
+    position: relative;
+    left: 6px;
+}
+
+#cropped img{
+    max-width: 100%;
+    align-self: flex-start;
+    padding-bottom: 10px;
+}
+
+.del{
+    position: absolute;
+    top: 0px;
+    right: 0;
+}
+
+#right_mark{
+    position: absolute;
+    border: 1px solid #c0c0c0;
+    margin-left: calc((var(--pix_max_width) / 2) + 34px);
+    width: calc((var(--pix_max_width) / 2 ) + 14px);
+    margin-bottom: 5px;
+    top: calc(var(--pix_max_height) + var(--pix_max_top) );
+    cursor: ew-resize;
+}
+
+#mark{
+    height: 14px;
+    width: 14px;
+    background: #cd0a0a;
+    cursor:pointer;
+    border: outset 2px;
+    left: calc(var(--crop_width) / 2 );
+    position: relative;
+    box-sizing: border-box;
+}
+
+#bottom_mark{
+    /*background: blue; */
+    height: calc(var(--Cy) + 14px);
+    /* width: 31px; */
+    position: absolute;
+    top: 4px;
+    left: calc(var(--pix_max_left) + var(--pix_max_width) );
+    border-bottom: solid 1px #d0d0d0;
+}
+
+#bottom_mark div{
+    height: 14px;
+    width: 14px;
+    background: #cd0a0a;
+    cursor: pointer;
+    border: outset 2px;
+    top: calc(var(--Cy) - var(--crop_height) / 2 );
+    position: relative;
+    box-sizing: border-box;
+}
+
+#h_line{
+    border: none;
+    background-color: red;
+    color: red;
+    height: 1px;
+    z-index: 401;
+    width: 100%;
+    position: absolute;
+    cursor:pointer;
+    margin: 0;
+    top: calc(var(--Cy) - var(--crop_height) / 2 - 1px);
+}
+
+#size_mark{
+    background: aquamarine;
+    position: absolute;
+    top: 7px;
+    left: calc( var(--pix_max_left) + var(--pix_max_width) + 14px);
+    height: calc(var(--pix_max_height) + 14px);
+}
+
+#mark_s{
+    height: 14px;
+    width: 14px;
+    top: calc(var(--Cy) + 7px);
+    background: red;
+    border: outset 2px;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+#arrow_v{
+    margin-left: 6px;
+    background-image: url(../pic/arrow_v_green.png) ;
+}
+#arrow_h{
+    background-image: url(../pic/arrow_h_green.png) ;
+}
+
+.arrow_vh{
+    background-size: 83%;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-color: rgb(223, 240, 255);
+    height: 22px;
+    width: 22px;
+    outline: none;
+    vertical-align: bottom;
+    text-align: center;
+}
+
+#file{
+    width: 100%;
+}

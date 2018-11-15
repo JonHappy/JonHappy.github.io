@@ -1,0 +1,816 @@
+
+<!DOCTYPE html>
+<!--  http://habrahabr.ru/post/112286/  -->
+
+
+<html>
+    <head>
+        <link rel="icon" href="pic/favicon.ico" type="image/x-icon">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>PIC</title>
+        <script src="js/libs/jquery/jquery.min.js" type="text/javascript"></script>
+
+        <!--<script src="js/libs/jquery-mousewheel/jquery.mousewheel.min.js" type="text/javascript"></script>-->
+        <script src="js/jquery-ui.min.js" type="text/javascript"></script>
+        <!--</script> http://webext.ru/fix-mousewheel/-->
+        <link href="CSS/pic.css" rel="stylesheet" type="text/css"/>
+        <style id="st1">
+            :root{
+                --pix_max_width:700px;
+                --pix_max_height:700px;
+                --crop_width:300px;
+                --crop_height:300px;
+                --pix_max_left:50px;
+                --pix_max_top:10px;
+                --Cx:calc(var(--pix_max_width) / 2 );
+                --Cy:calc(var(--pix_max_height) / 2 );
+                --controls_top:90px;
+                --controls_left:800px;
+            }
+        </style>
+
+        <style id="st2">
+            input[type=range] {
+                -webkit-appearance: none;
+                transform: rotate(90deg);
+                transform-origin: 0px 0px;
+            }
+            input[type=range]::-webkit-slider-runnable-track {
+                width: 300px;
+                height: 5px;
+                background: #ccc;
+                border: none;
+                border-radius: 3px;
+            }
+            input[type=range]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                border: none;
+                height: 16px;
+                width: 16px;
+                border-radius: 50%;
+                background: red;
+                margin-top: -5px;
+            }
+            input[type=range]:focus {
+                outline: none;
+            }
+            input[type=range]:focus::-webkit-slider-runnable-track {
+                background: #ddd;
+            }
+        </style>
+        <style>
+            #label_h{margin-left: 4px;}
+            #label_w{margin-left: 4px;}
+            #name_file{
+                height: 18px;
+                display: inline-block;
+                padding-left: 3px;
+                vertical-align: bottom;
+            }
+
+            #bottom_mark{
+                cursor: ns-resize;
+            }
+            #controls{
+                position: absolute;
+                left: var(--controls_left);
+                top: var(--controls_top);
+                /* left: 1107px; */
+                z-index: 1000;
+                background: #eef3f3;
+                border: 1px solid #c0c0c0;
+                padding-bottom: 5px;
+                padding-left: 5px;
+                padding-right: 5px;
+                width: 332px;
+            }
+            #rotation{
+                width: 30px;
+                height: calc(var(--pix_max_height));
+                box-sizing: content-box;
+
+            }
+            #rotate{
+                background: #ffffff;
+                z-index: 10;
+                position: absolute;
+                top: 10px;
+                left: 28px;
+                height: 10px;
+                width: var(--pix_max_height);
+
+            }
+            #div_head:hover{
+                cursor: move;
+            }
+            #div_head{
+                height: 15px;
+                width: calc(100% + 10px);
+                background: aquamarine;
+                margin-left: -5px;
+            }
+        </style>
+    </head>
+    <div id="div1">
+        <hr id="v_line">
+        <hr id="h_line">
+        <div id="crop"><div></div></div>
+        <img id="img" src="" alt=""/>
+    </div>
+    <div id="rotation"><input id="rotate" type="range" value="0" min="-180" max="180" step="0.1"></div>
+    <div id="right_mark"><div id="mark"></div></div>
+    <div id="bottom_mark"><div id="mark_b"></div></div>
+    <div id="size_mark"><div id="mark_s"></div></div>
+    <div id="controls">
+        <div id="div_head"></div>
+        <input type="file" id="file" multiple accept="image/jpeg"><br><div id="name_file"></div>
+        <br>
+        <button id="c2"><span>x</span>/<span>xx</span></button>
+        <button id="arrow_v" class="arrow_vh"></button>
+        <button id="arrow_h" class="arrow_vh"></button>
+        <label id="label_h">h <span id="h_crop"></span></label>
+        <label id="label_w">w <span id="w_crop"></span></label>
+        <br>
+        <button id="crop_button"  disabled="">обрезать</button>
+        <button id="save" disabled="" >Сохранить</button>
+        <button id="c1"><span style="color: #00ff00;">full</span>/<span>preview</span></button>
+    </div>
+    <div id="cropped"></div>
+
+    <script>
+
+        var pics = {
+            full_height: 600,
+            full_width: 700,
+            preview_height: 70,
+            preview_width: 70
+        };
+        document.documentElement.style.setProperty('--crop_width', pics.full_width + 'px');
+        document.documentElement.style.setProperty('--crop_height', pics.full_height + 'px');
+
+        document.documentElement.style.setProperty('--pix_max_width', pics.full_width + 'px');
+        document.documentElement.style.setProperty('--pix_max_height', pics.full_height + 'px');
+
+        document.querySelector('#h_crop').innerHTML = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_height'));
+        document.querySelector('#w_crop').innerHTML = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_width'));
+
+        var matrix = new Array(6);
+        var current_img = {
+            top: 0,
+            left: 0,
+            x: 0,
+            y: 0,
+            height: 0,
+            width: 0
+        };
+        var new_img = {
+            top: 0,
+            left: 0,
+            x: 0,
+            y: 0,
+            height: 0,
+            width: 0
+        };
+        var img = {height: 0,
+            width: 0,
+            rotate: 0,
+            scale: 1
+        };
+        var id_crop = ['preview', 'full'];
+        var crop = {
+            id: id_crop[1]
+        };
+
+        var x_xx = 0.01;
+        var cropImg = 0;
+        var deg_to_rad = Math.PI / 180;
+        var rad_to_deg = 180 / Math.PI;
+
+        function tr_or() {
+            var dx = new_img.left - current_img.left;
+            var dy = new_img.top - current_img.top;
+            var beta = Math.atan2(dx, dy);
+            var alfa = img.rotate * deg_to_rad;
+            var len = (Math.sqrt(dx * dx + dy * dy));
+            new_img.x = current_img.x - len * Math.sin(beta + (alfa));
+            new_img.y = current_img.y - len * Math.cos(beta + (alfa));
+
+            var Cy = parseInt(getComputedStyle(document.getElementById('div1')).height) / 2;
+            var Cx = parseInt(getComputedStyle(document.getElementById('div1')).width) / 2;
+
+            new_img.top = (Cy - new_img.y);
+            new_img.left = (Cx - new_img.x);
+            set_css_img();
+            current_img.x = new_img.x;
+            current_img.y = new_img.y;
+        }
+
+//            -- переключатель full/preview --
+        document.getElementById('c1').addEventListener('click', function () {
+
+            if (crop.id === 'preview')
+            {
+//            -- включение режима full --
+                this.querySelector('span:nth-child(2)').style.color = '#000000';
+                this.querySelector('span:nth-child(1)').style.color = '#00ff00';
+                crop.id = id_crop[1];
+
+
+                document.documentElement.style.setProperty('--crop_width', pics.full_width + 'px');
+                document.documentElement.style.setProperty('--crop_height', pics.full_height + 'px');
+                document.querySelector('#h_crop').innerHTML = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_height'));
+                document.querySelector('#w_crop').innerHTML = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_width'));
+
+                var h_pre = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_height'));
+                var w_pre = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_width'));
+                var h = parseInt(getComputedStyle(document.getElementById('div1')).height);
+                var w = parseInt(getComputedStyle(document.getElementById('div1')).width);
+
+                w = w / h * h_pre;
+                h = h_pre;
+                img.scale *= pics.full_width / pics.preview_width;
+                setres(0);
+
+
+            } else {
+
+//            -- включение режима preview --
+                this.querySelector('span:nth-child(2)').style.color = '#00ff00';
+                this.querySelector('span:nth-child(1)').style.color = '#000000';
+                crop.id = id_crop[0];
+
+
+
+                var h_pre = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_height'));
+                var w_pre = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_width'));
+                var h = parseInt(getComputedStyle(document.getElementById('div1')).height);
+                var w = parseInt(getComputedStyle(document.getElementById('div1')).width);
+
+                w = w / h * h_pre;
+                h = h_pre;
+                img.scale *= pics.preview_width / pics.full_width;
+                ;
+                setres(0);
+
+                var crop_height = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_height'));
+                var crop_width = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_width'));
+
+                document.documentElement.style.setProperty('--crop_height', pics.preview_height + 'px');
+                document.documentElement.style.setProperty('--crop_width', pics.preview_width + 'px');
+
+                if (crop_height !== pics.full_height) {
+                    document.documentElement.style.setProperty('--crop_height', pics.preview_height * crop_height / pics.full_height + 'px');
+                } else {
+                    document.documentElement.style.setProperty('--crop_width', pics.preview_width * crop_width / pics.full_width + 'px');
+                }
+
+
+                document.querySelector('#h_crop').innerHTML = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_height'));
+                document.querySelector('#w_crop').innerHTML = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_width'));
+            }
+
+
+        });
+//        -- назначение пермещения --
+
+        document.documentElement.addEventListener("keydown", function (event) {
+            event.preventDefault();
+            var k = event.keyCode || event.charCode;
+            switch (k)
+            {
+                case 16:
+                    window.xx = true;
+                    document.getElementById('arrow_v').style.backgroundImage = 'url(pic/arrow_v_green.png)';
+                    window.yy = false;
+                    document.getElementById('arrow_h').style.backgroundImage = 'url(pic/arrow_h_red.png)';
+                    $('#img').draggable("option", "disabled", false);
+                    break;
+                case 17:
+                    window.yy = true;
+                    document.getElementById('arrow_h').style.backgroundImage = 'url(pic/arrow_h_green.png)';
+                    window.xx = false;
+                    document.getElementById('arrow_v').style.backgroundImage = 'url(pic/arrow_v_red.png)';
+                    $('#img').draggable("option", "disabled", false);
+                    break;
+            }
+
+        });
+        document.documentElement.addEventListener("keyup", function (event) {
+            event.preventDefault();
+            var k = event.keyCode || event.charCode;
+            switch (k)
+            {
+                case 16:
+                    document.getElementById('arrow_h').style.backgroundImage = 'url(pic/arrow_h_green.png)';
+                    window.xx = false;
+                    break;
+                case 17:
+                    document.getElementById('arrow_v').style.backgroundImage = 'url(pic/arrow_v_green.png)';
+                    window.yy = false;
+                    break;
+            }
+
+        });
+
+
+
+        $('#img').draggable({
+            stop: function (event, ui) {
+                current_img.top = ui.originalPosition.top;
+                new_img.top = ui.position.top;
+                current_img.left = ui.originalPosition.left;
+                new_img.left = ui.position.left;
+                tr_or();
+            },
+            start: function (event, ui) {
+
+                if (!window.yy && !window.xx) {
+                    current_img.left = ui.originalPosition.left;
+                    new_img.left = ui.position.left;
+                    current_img.top = ui.originalPosition.top;
+                    new_img.top = ui.position.top;
+                    $('#img').draggable("option", "axis", "false");
+                    return;
+                }
+
+
+                if (!window.yy)
+                {
+                    current_img.left = ui.originalPosition.left;
+                    new_img.left = ui.position.left;
+                    $('#img').draggable("option", "axis", "y");
+                }
+                if (!window.xx)
+                {
+                    current_img.top = ui.originalPosition.top;
+                    new_img.top = ui.position.top;
+                    $('#img').draggable("option", "axis", "x");
+                }
+
+
+            }
+
+        });
+
+        let v = 0;
+        $('#mark_s').draggable({
+            axis: "y",
+            containment: "parent",
+            drag: function (event, ui) {
+                var x = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--pix_max_height'));
+                var t = parseInt(getComputedStyle(document.getElementById('size_mark')).height) - parseInt(ui.position.top) - 14;
+                if (t - 1 > 0 && t < x) {
+                    setres(v < t ? x_xx : -x_xx);
+                    v = t;
+                }
+            },
+            stop: function () {
+                document.getElementById('mark_s').style['top'] = '';
+            },
+            revert: true,
+            revertDuration: 30
+        });
+
+
+        $('#mark').draggable({
+            axis: "x",
+            containment: "parent",
+            drag: function (event, ui) {
+                document.documentElement.style.setProperty('--crop_width', ui.position.left * 2 + "px");
+                document.querySelector('#w_crop').innerHTML = parseInt(document.documentElement.style.getPropertyValue('--crop_width'));
+            },
+            stop: function () {
+                document.getElementById('mark').style['left'] = '';
+            }
+        });
+        $('#mark_b').draggable({
+            axis: "y",
+            containment: "parent",
+            drag: function (event, ui) {
+                var crop_height = (parseInt(getComputedStyle(document.getElementById('div1')).height) / 2 - ui.position.top) * 2;
+                document.documentElement.style.setProperty('--crop_height', crop_height + "px");
+                document.querySelector('#h_crop').innerHTML = crop_height;
+            },
+            stop: function () {
+                document.getElementById('mark_b').style['top'] = '';
+            }
+        });
+        document.querySelector('#c2 span:nth-child(2)').style.color = '#00ff00';
+
+
+//        -- запрет перемещения h --
+        document.getElementById('arrow_h').addEventListener("click", function () {
+            window.xx = !window.xx;
+            document.getElementById('arrow_h').style.backgroundImage = window.xx ? 'url(pic/arrow_h_red.png)' : 'url(pic/arrow_h_green.png)';
+            $('#img').draggable("option", "disabled", window.yy && window.xx);
+        });
+//        -- запрет перемещения v --
+        document.getElementById('arrow_v').addEventListener("click", function () {
+            window.yy = !window.yy;
+            document.getElementById('arrow_v').style.backgroundImage = window.yy ? 'url(pic/arrow_v_red.png)' : 'url(pic/arrow_v_green.png)';
+            $('#img').draggable("option", "disabled", window.yy && window.xx);
+        });
+
+//        -------------------------- скорость ресайза --------------------------------------
+        document.getElementById('c2').addEventListener("click", function () {
+            if (x_xx === 0.001)
+            {
+                document.querySelector('#c2 span:nth-child(2)').style.color = '#00ff00';
+                document.querySelector('#c2 span:nth-child(1)').style.color = '#000000';
+                x_xx = 0.01;
+            } else {
+                document.querySelector('#c2 span:nth-child(2)').style.color = '#000000';
+                document.querySelector('#c2 span:nth-child(1)').style.color = '#00ff00';
+                x_xx = 0.001;
+            }
+        });
+
+//        -- ресайз колесом --
+        document.getElementById('div1').addEventListener('wheel', function (event) {
+            var delta = -event.deltaY;
+
+            event.preventDefault();
+            var x = delta > 0 ? -1 : 1;
+
+            if (!event.altKey & !event.ctrlKey & !event.shiftKey) {
+                if ((img.width * img.scale > 10 || img.height * img.scale > 10) || delta > 0) {
+                    setres(delta > 0 ? x_xx : -x_xx);
+                    return;
+                }
+            }
+
+            if (event.shiftKey) {
+                current_img.top = parseInt(document.getElementById('img').style.top);
+                new_img.top = current_img.top + x;
+                current_img.left = parseInt(document.getElementById('img').style.left);
+                new_img.left = current_img.left;
+                tr_or();
+            } else
+            if (event.ctrlKey) {
+                current_img.top = parseInt(document.getElementById('img').style.top);
+                new_img.top = current_img.top;
+                current_img.left = parseInt(document.getElementById('img').style.left);
+                new_img.left = current_img.left + x;
+                tr_or();
+            } else
+            if (event.altKey) {
+                img.rotate = parseFloat(document.getElementById('rotate').value);
+                img.rotate += delta > 0 ? 0.1 : -0.1;
+                document.getElementById('rotate').value = img.rotate;
+                set_css_img();
+            }
+        });
+
+        function setres(p) {
+            img.scale += p;
+
+            var new_h = img.height * img.scale;
+            new_img.x = new_img.x * new_h / new_img.height;
+            new_img.height = new_h;
+
+            var new_w = img.width * img.scale;
+            new_img.y = new_img.y * new_w / new_img.width;
+            new_img.width = new_w;
+
+            current_img.x = new_img.x;
+            current_img.y = new_img.y;
+            var Cy = parseInt(getComputedStyle(document.getElementById('div1')).height) / 2;
+            var Cx = parseInt(getComputedStyle(document.getElementById('div1')).width) / 2;
+            new_img.top = (Cy - new_img.y);
+            new_img.left = (Cx - new_img.x);
+            set_css_img();
+        }
+
+        function set_css_img() {
+            var ang = -1 * img.rotate * deg_to_rad;
+            matrix[0] = Math.cos(ang);
+            matrix[1] = -Math.sin(ang);
+            matrix[2] = Math.sin(ang);
+            matrix[3] = Math.cos(ang);
+            matrix[4] = 0;
+            matrix[5] = 0;
+            var imgt = document.getElementById('img');
+            imgt.style.width = (img.width * img.scale) + 'px';
+            imgt.style.height = (img.height * img.scale) + 'px';
+            imgt.style.transformOrigin = new_img.x + 'px ' + new_img.y + 'px';
+            imgt.style.top = new_img.top + 'px';
+            imgt.style.left = new_img.left + 'px';
+            imgt.style.transform = 'matrix(' + matrix.join(',') + ')';
+        }
+
+//        -- поворот ползунком --
+        document.getElementById('rotate').addEventListener("input", function () {
+            img.rotate = parseFloat(this.value);
+            set_css_img();
+        });
+
+//        -- поворот колесом мыши --
+        document.getElementById('rotate').addEventListener("wheel", function (event) {
+            event.preventDefault();
+            img.rotate = parseFloat(document.getElementById('rotate').value);
+            img.rotate += event.deltaY > 0 ? 1 : -1;
+            document.getElementById('rotate').value = img.rotate;
+            set_css_img();
+        });
+        document.getElementById('bottom_mark').addEventListener("wheel", function (event) {
+            event.preventDefault();
+            var x = event.deltaY > 0 ? 1 : -1;
+            var pix_max_height = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--pix_max_height'));
+            var crop_height = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_height'));
+            if ((crop_height > 0 || x > 0) && (crop_height < pix_max_height || x < 0))
+            {
+                document.documentElement.style.setProperty('--crop_height', (crop_height + x) + "px");
+            }
+            document.querySelector('#h_crop').innerHTML = crop_height;
+        });
+        document.getElementById('right_mark').addEventListener("wheel", function (event) {
+            event.preventDefault();
+            var x = event.deltaY > 0 ? 1 : -1;
+            var pix_max_width = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--pix_max_width'));
+            var crop_width = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_width'));
+            if ((crop_width > 0 || x > 0) && (crop_width < pix_max_width || x < 0))
+            {
+                document.documentElement.style.setProperty('--crop_width', (crop_width + x) + 'px');
+            }
+            document.querySelector('#w_crop').innerHTML = crop_width;
+        });
+
+//        -- загрузка файла --
+        var fb = [];
+        var work;
+        document.querySelector('#file').addEventListener('change', function () {
+            work = work_(this.files);
+        }, false);
+
+//загрузка перетаскиванием
+//            var target = document.getElementById("div1");
+//            target.addEventListener("dragover", function (event) {
+//                event.preventDefault(); // отменяем действие по умолчанию
+//            }, false);
+//            target.addEventListener("drop", function (event) {
+//                // отменяем действие по умолчанию
+//                event.preventDefault();
+//                var files = event.dataTransfer.files;
+//                var n = files.length;
+//                var g = n;
+//                for (var i = 0; i < n; i++) {
+//                    var reader = new FileReader();
+//                    reader.onload = function (e) {
+//                        var pic = new Image();
+//                        pic.onload = function () {
+//                            fb.push(pic);
+//                            if (g === 0)
+//                            {
+//                                work();
+//                            }
+//                        };
+//                        pic.src = e.target.result;
+//
+//                    };
+//                    reader.readAsDataURL(event.dataTransfer.files[i]);
+//                }
+//            }, false);
+
+
+
+
+        function work_(fa) {
+            var failesArray = fa;
+            var n = 0;
+            var a = failesArray.length;
+            vvv(failesArray[n++]);
+            var el_img = document.getElementById('img');
+            var urlFactory = window.URL || window.webkitURL;
+            function vvv(file) {
+                var reader = new FileReader();
+                reader.onload = function () {
+                    console.timeEnd('чтение');
+                    document.getElementById('crop_button').removeAttribute('disabled');
+                    var pic = new Image();
+                    var pix_max_width = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--pix_max_width'));
+                    var pix_max_height = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--pix_max_height'));
+                    pic.onload = function () {
+                        document.querySelector('#name_file').innerHTML = n + '/' + a + '  ' + file.name;
+                        console.timeEnd('запись');
+                        console.time('показ');
+                        el_img.setAttribute('src', pic.src);
+                        console.timeEnd('показ');
+                        img.scale = pix_max_width / parseInt(pic.width);
+                        img.height = parseInt(pic.height);
+                        img.width = parseInt(pic.width);
+                        var h = img.height * img.scale;
+                        var w = img.width * img.scale;
+                        el_img.style.height = h + 'px';
+                        el_img.style.width = w + 'px';
+                        new_img.height = current_img.height = h;
+                        new_img.width = current_img.width = w;
+                        new_img.top = current_img.top = 0;
+                        new_img.left = current_img.left = 0;
+                        new_img.x = current_img.x = pix_max_width / 2;
+                        new_img.y = current_img.y = pix_max_height / 2;
+                        img.rotate = 0;
+                        tr_or();
+                    };
+                    console.time('запись');
+                    pic.src = urlFactory.createObjectURL(new Blob([reader.result], {type: "image/jpeg"}));
+                };
+                console.log('file  %s', file.name);
+                console.time('чтение');
+                reader.readAsArrayBuffer(file);
+            }
+
+            return  function () {
+                if (n < a) {
+                    vvv(failesArray[n++]);
+                } else {
+//                        window.close();
+                    document.getElementById('img').src = '';
+                    document.getElementById('name_file').innerHTML = '';
+                    document.getElementById('file').value = null;
+                }
+                return n;
+            };
+        }
+
+
+//        -- обрезка --
+        document.getElementById('crop_button').addEventListener('click', function () {
+            var crop_width = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_width'));
+            var crop_height = parseInt(getComputedStyle(document.documentElement, null).getPropertyValue('--crop_height'));
+
+
+            var canvas = document.createElement("canvas");
+            var context = canvas.getContext("2d");
+
+            var sq = Math.sqrt(crop_width * crop_width + crop_height * crop_height);
+
+            var x = Math.floor((new_img.x - sq / 2) / img.scale);
+            var y = Math.floor((new_img.y - sq / 2) / img.scale);
+            var w = Math.floor(sq / img.scale);
+            var h = Math.floor(sq / img.scale);
+
+            canvas.height = h;
+            canvas.width = w;
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, w, h);
+            context.drawImage(document.getElementById('img'), x, y, w, h, 0, 0, w, h);
+            var pic = new Image();
+            if (img.scale < 1) {
+                pic.onload = pic_load1;
+                pic.src = resize(canvas, sq, sq);
+            } else {
+                pic.onload = pic_load3;
+                pic.src = canvas.toDataURL("image/jpeg", 1.0);
+
+            }
+
+
+
+            function pic_load1() {
+                canvas.height = sq;
+                canvas.width = sq;
+                context.translate(sq / 2, sq / 2);
+                context.rotate((img.rotate * Math.PI) / 180);
+
+                context.drawImage(pic, -sq / 2, -sq / 2);
+                pic.onload = load_pic2;
+                pic.src = canvas.toDataURL("image/jpeg", 1.0);
+            }
+
+            function load_pic2() {
+                canvas.height = crop_height;
+                canvas.width = crop_width;
+                var x = (sq - crop_width) / 2;
+                var y = (sq - crop_height) / 2;
+                context.drawImage(pic, x, y, crop_width, crop_height, 0, 0, crop_width, crop_height);
+                var k = crop.id === 0 ? 1.0 : 0.75;
+                document.querySelector('#cropped').innerHTML += '<div ><img id="' + crop.id + '" src="' + canvas.toDataURL("image/jpeg", k) + '"><img src="pic/del.png" class="del"  width="18" height="18" alt="del"/></div>';
+                document.getElementById('c1').click();
+                
+                cropImg = crop.id === id_crop[1] ? (cropImg | 2) : (cropImg | 1);
+
+                if (cropImg === 3) {
+                    document.getElementById('save').removeAttribute('disabled');
+                }
+            }
+
+            function pic_load3() {
+                canvas.height = sq;
+                canvas.width = sq;
+                context.drawImage(pic, 0, 0, sq, sq);
+                pic.onload = pic_load1;
+                pic.src = canvas.toDataURL("image/jpeg", 1.0);
+            }
+        });
+
+
+//        -- пошаговое уменьшение картинки --
+        function resize(img, w, h) {
+            var steps = Math.ceil(Math.log(img.height / h) / Math.LN2);
+            var sW = w * Math.pow(2, steps - 1);
+            var sH = h * Math.pow(2, steps - 1);
+            var canvas;
+            while (steps--)
+            {
+                canvas = document.createElement('canvas');
+                canvas.width = sW;
+                canvas.height = sH;
+                canvas.getContext('2d').drawImage(img, 0, 0, sW, sH);
+                img.src = 'about:blank';
+                img.width = 1;
+                img.height = 1;
+                img = canvas;
+
+                sW = Math.round(sW / 2);
+                sH = Math.round(sH / 2);
+            }
+            return canvas.toDataURL("image/jpeg", 1);
+        }
+
+
+//        -- удаление обрезаных картинок --
+        document.getElementById('cropped').addEventListener('click', function (event) {
+            if (event.target.className === 'del') {
+                event.target.closest('#cropped').innerHTML = '';
+                cropImg = 0;
+                document.getElementById('save').setAttribute('disabled', 'disabled');
+                document.getElementById('crop_button').removeAttribute('disabled');
+            }
+        }, true);
+
+
+        var currentCell = 0;
+        document.getElementById('save').addEventListener('click', function () {
+            // передача картинок в родительское окно
+//                var element = window.opener.document.getElementsByTagName('my-AirTest')[0];
+//                var cellIndex = element.dataset['sample'];
+//                var tdr;
+//                if (cellIndex !== '-')
+//                {
+//                    tdr = element.shadowRoot.querySelector('#tbl tbody tr:nth-child(1) td:nth-child(' + (parseInt(cellIndex) + 1) + ')');
+//                }
+//                else
+//                {
+//                    tdr = element.shadowRoot.querySelector('#tbl tbody tr:nth-child(1) td:nth-child(' + (++currentCell) + ')');
+//
+//                }
+//                tdr.innerHTML = '<img src="' + document.getElementById('full').getAttribute('src') + '"  data-new="new" style="height: 100%;" />';
+////                    var v = $('#img_box_add', window.opener.document);
+////                    var w = v.clone();
+////                    v.removeAttr('id');
+////                    v.attr('data-pic', 'new');
+////                    v.append('<img src="' + $('#' + id_crop[0]).attr('src') + '"   height="70"   data-img="' + $('#' + id_crop[1]).attr('src') + '"/>');
+////                    v.find('button img').attr('src', 'pic/del.webp');
+////                    v.parent().append(w);
+//
+// сохранение картинок на локальной машине
+            var name = document.querySelector('#name_file').textContent.split('  ')[1].split('.')[0];
+            var link = document.createElement("a");
+            document.body.appendChild(link);
+
+            link.setAttribute("href", document.getElementById('full').getAttribute('src'));
+            link.setAttribute("download", name + ' ' + document.querySelector('#full').width + 'x' + document.querySelector('#full').height + '.jpg');
+            link.click();
+
+            link.setAttribute("href", document.getElementById('preview').getAttribute('src'));
+            link.setAttribute("download", name + ' ' + document.querySelector('#preview').width + 'x' + document.querySelector('#preview').height + '.jpg');
+            link.click();
+
+            document.querySelector('#cropped').innerHTML = '';
+            document.getElementById('save').setAttribute('disabled', 'disabled');
+            link.remove();
+            cropImg = 0;
+            work();
+        });
+
+
+        var root = document.getElementById('div_head');
+        root.st = document.documentElement.style;
+
+        root.addEventListener("mousedown", evt => {
+            root.clientX = parseInt(getComputedStyle(root, null).getPropertyValue('--controls_left'));
+            root.clientY = parseInt(getComputedStyle(root, null).getPropertyValue('--controls_top'));
+            root.dxx = (evt.clientX - root.clientX);
+            root.dyy = (evt.clientY - root.clientY);
+            document.documentElement.addEventListener("mousemove", controls_m_move);
+            document.documentElement.addEventListener("mouseup", controls_remove);
+        });
+        root.ondragstart = function () {
+            return false;
+        };
+        function controls_m_move(evt) {
+            root.clientX = parseInt(getComputedStyle(root, null).getPropertyValue('--controls_left')) + (evt.clientX - root.clientX) - root.dxx;
+            root.clientY = parseInt(getComputedStyle(root, null).getPropertyValue('--controls_top')) + (evt.clientY - root.clientY) - root.dyy;
+
+            root.st.setProperty("--controls_left", root.clientX + 'px');
+            root.st.setProperty("--controls_top", root.clientY + 'px');
+        }
+        function controls_remove() {
+            document.documentElement.removeEventListener("mousemove", controls_m_move);
+            document.documentElement.removeEventListener("mouseup", controls_remove);
+        }
+    </script>
+
+</body>
+</html>

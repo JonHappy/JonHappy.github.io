@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <link rel="icon" href="pic/favicon.ico" type="image/x-icon">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>xxx</title>
+
+        <style>
+            #tb1{
+                border: 1px;
+                border-collapse: collapse;
+            }
+            #tb1 td{
+                border: 1px solid #c0c0c0;
+            }
+            .t{
+                width: 30px;
+                height: 18px;
+
+            }
+
+        </style>
+    </head>
+    <body>
+        <div >
+            <table id="tb1">
+                <tbody>
+                </tbody>
+
+            </table>
+        </div>
+        <script>
+            var t1 = document.querySelector('#tb1 tbody').innerHTML;
+            document.querySelector('#tb1 tbody').innerHTML = '';
+            var di = document.querySelector('#tb1 tbody');
+            
+            var d='<tr><td  class="t">44</td><td class="t">44</td><td  class="t">44</td><td  class="t">44</td><td  class="t">44</td></tr>';
+            var g='';
+            for(var i=0;i<100;i++){
+                g+=d;
+            }
+            console.time('t1');
+            di.innerHTML = g;
+            console.timeEnd('t1');
+            
+            console.time('t3');
+            di.innerHTML='';
+            di.insertAdjacentHTML('afterBegin',g);
+            console.timeEnd('t3');
+            
+            
+            
+            
+            
+            
+            
+            var x = ' "tr": {"td1": {"value": 55, "class": "t"}, "td2": {"value": 55, "class": "t"}, "td3": {"value": 55, "class": "t"}, "td4": {"value": 55, "class": "t"}, "td5": {"value": 55, "class": "t"}},';
+            var y = '{';
+            for (var i = 0; i < 100; i++) {
+                y += x.replace('tr', 'tr' + i);
+            }
+
+            var s = JSON.parse(y.replace(/,$/, '}'));
+            var el_tr;
+            var el_tr;
+            console.time('t2');
+           di.innerHTML='';
+            
+            for (i = 0; i < 100; i++) {
+                el_tr = document.createElement('tr');
+                for (var j = 1; j < 6; j++) {
+                    el_td = document.createElement('td');
+                    el_td.setAttribute('class', s['tr' + i]['td' + j]['class']);
+                    el_td.innerText = s['tr' + i]['td' + j]['value'];
+                    el_tr.append(el_td);
+                }
+                di.append(el_tr);
+            }
+            console.timeEnd('t2');
+
+        </script>      
+
+
+
+
+    </body>
+</html>

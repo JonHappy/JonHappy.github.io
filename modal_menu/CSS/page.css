@@ -1,0 +1,62 @@
+root  {
+    display: block;
+}
+*  {
+    margin: 0;
+    padding: 0;
+}
+html  {
+    height: 100%;
+}
+body  {
+    font: 12px/18px Arial, Tahoma, Verdana, sans-serif;
+    width: 100%;
+    height: 100%;
+    background-color:#ffffff;
+    /* border: 1px solid; */
+    /* outline: none; */
+}
+a  {
+    color: blue;
+    outline: none;
+    text-decoration: underline;
+}
+a:hover  {
+    text-decoration: none;
+}
+img  {
+    border: none;
+}
+input  {
+    font: 12px/18px Arial, Tahoma, Verdana, sans-serif;
+}
+table  {
+    border-collapse: collapse;
+    cursor: default;
+    /* height: 100%; */
+    /* position: relative; */
+}
+td, th{
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+
+}
+#tbl1{
+    position: absolute;
+    top: 60px;
+    left: 10px;
+}
+#tbl1 th:nth-child(1), #tbl1 td:nth-child(1){ width: 150px}
+#tbl1 th:nth-child(2), #tbl1 td:nth-child(2){ width: 70px}
+#tbl1 th:nth-child(3), #tbl1 td:nth-child(3){ width: 70px}
+
+#tbl1 td:nth-child(1){padding-left: 5px}
+#tbl1 td:nth-child(2){padding-right: 5px; text-align: right}
+#tbl1 td:nth-child(3){padding-right: 5px; text-align: right}
+
+.t1{
+    background: bisque;
+}
+.t2{
+    background: burlywood;
+}

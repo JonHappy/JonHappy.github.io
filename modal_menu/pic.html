@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+
+
+
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Pic</title>
+
+        <script src="js/jquery/external/jquery/jquery.js" type="text/javascript"></script>
+        <script src="js/jquery/jquery-ui.js" type="text/javascript"></script>
+        <script src="js/jquery/jquery.mousewheel.js" type="text/javascript"></script>
+        <link href="CSS/pic.css" rel="stylesheet" type="text/css"/>
+        <link rel="icon" type="image/png" href="pic/arrow_ltr2.png" />
+    </head>
+    <body>
+        <div id="div1">
+            <hr id="v_line">
+            <hr id="h_line">
+            <div id="crop"><div></div></div>
+            <img id="img" src="" alt=""/>
+        </div>
+        <div id="div_rotate">
+            <input  id="rotate" type="range" value="0" min="-180" max="180" step="1">
+        </div>
+        <div id="right_mark"><div id="mark"></div></div>
+        <div id="bottom_mark"><div id="mark_b"></div></div>
+        <div id="size_mark"><div id="mark_s"></div></div>
+        <input type="file" id="file" multiple accept="image/png,image/jpeg" style="display: none;">
+        <button id="load"  onclick="document.getElementById('file').click();">Загрузить картинки</button>
+        <button id="crop_button">обрезать</button>
+        <button id="c1">full/preview</button>
+        <button id="c2"><span>x</span>/<span>xx</span></button>
+        <button id="save" disabled="" >Сохранить</button>
+        <button id="arrow_v" class="arrow_vh"></button>
+        <button id="arrow_h"  class="arrow_vh"></button>
+        <div id="list_files"></div>
+        <div class="cropped"></div>
+
+        <div style="cursor: url(CSS/move.cur), auto; display: none;"></div>
+        <div style="cursor: url(CSS/arrow3.cur), auto; display: none;"></div>
+        <div style="cursor: url(CSS/arrow4.cur), auto; display: none;"></div>
+
+        <script>
+
+            var pics = {
+                full_height: 700,
+                full_width: 600,
+                preview_height: 70,
+                preview_width: 70
+            };
+            var matrix = new Array(6);
+            var current_img = {
+                top: 0,
+                left: 0,
+                x: 0,
+                y: 0,
+                height: 0,
+                width: 0
+            };
+            var new_img = {
+                top: 0,
+                left: 0,
+                x: 0,
+                y: 0,
+                height: 0,
+                width: 0
+            };
+            var img = {
+                height: 0,
+                width: 0,
+                rotate: 0,
+                scale: 1
+            };
+            var id_crop = ['preview', 'full'];
+            var crop = {
+                height: pics.full_height,
+                width: pics.full_width,
+                id: id_crop[1]
+            };
+            var Cy = $('#div1').height() / 2;
+            var Cx = $('#div1').width() / 2;
+            $('#crop').css({
+                height: crop.height,
+                width: crop.width,
+                top: Cy - crop.height / 2,
+                left: Cx - crop.width / 2
+            });
+            var x_xx = 0.01;
+            var cropImg = 0;
+            var deg_to_rad = Math.PI / 180;
+            var rad_to_deg = 180 / Math.PI;
+
+            function tr_or() {
+                var dx = new_img.left - current_img.left;
+                var dy = new_img.top - current_img.top;
+                var beta = Math.atan2(dx, dy);
+                var alfa = img.rotate * deg_to_rad;
+                var len = (Math.sqrt(dx * dx + dy * dy));
+                new_img.x = current_img.x - len * Math.sin(beta + (alfa));
+                new_img.y = current_img.y - len * Math.cos(beta + (alfa));
+                new_img.top = (Cy - new_img.y);
+                new_img.left = (Cx - new_img.x);
+                set_css_img();
+                current_img.x = new_img.x;
+                current_img.y = new_img.y;
+            }
+
+//            <%-------------------------- переключатель full/preview --------------------------%>
+            $(document).on('click', '#c1', function () {
+                if (crop.height === pics.preview_height) {
+//            <%-------------------------- включение режима full --------------------------%>
+                    $('#bottom_mark').css('display', 'block');
+                    $('#mark_b').css('top', '0px');
+//                    $('#h_line').css('top', '-10px');
+                    $('#h_line').css('display', 'block').css('top', '-10px');
+                    crop.height = pics.full_height;
+                    crop.width = pics.full_width;
+                    crop.id = id_crop[1];
+                    $('#c1').attr('data-v', crop.id);
+                    img.scale = pics.full_width / img.width;
+                    setres(0);
+                    $('#crop').css({
+                        height: crop.height,
+                        width: crop.width,
+                        left: Cx - crop.width / 2,
+                        top: Cy - crop.height / 2
+                    });
+
+                } else {
+//            <%-------------------------- включение режима preview --------------------------%>
+                    $('#bottom_mark').css('display', 'none');
+                    $('#h_line').css('display', 'none');
+                    crop.width = crop.width / crop.height * pics.preview_height;
+                    var k = crop.height / pics.preview_height;
+                    crop.height = pics.preview_height;
+                    crop.id = id_crop[0];
+                    $('#c1').attr('data-v', crop.id);
+                    img.scale /= k;
+                    setres(0);
+                    $('#crop').css({
+                        height: crop.height,
+                        width: crop.width,
+                        left: Cx - crop.width / 2,
+                        top: Cy - crop.height / 2
+                    });
+                }
+                $('#v_line').css({
+                    left: $('#crop').width() / 2 + 2
+                });
+                $('#mark').css({
+                    left: $('#crop').width() / 2 + 2
+                });
+
+
+            });
+
+
+//            <%-------------------------- назначение пермещения , повороты --------------------------%>
+//            <%-------------------------- keyDown --------------------------%>
+
+            window.xx = true;
+            window.yy = true;
+            $(document).keydown(function (event) {
+                var k = event.keyCode || event.charCode;
+                switch (k) {
+                    case 16:
+                        window.shiftDown = true;
+                        window.xx = false;
+                        window.yy = true;
+                        $('#arrow_h').css('background-image', 'url(pic/arrow_h_red.png)');
+                        $('#div1').css('cursor', 'url(CSS/arrow3.cur),auto');
+                        break;
+                    case 17:
+                        window.yy = false;
+                        window.xx = true;
+                        $('#arrow_v').css('background-image', 'url(pic/arrow_v_red.png)');
+                        $("#div1").css('cursor', 'url(CSS/arrow4.cur),auto');
+                        window.ctrlDown = true;
+                        break;
+                    case 18:
+                        window.altDown = true;
+                        $("#div1").css('cursor', 'url(CSS/rotate.cur),auto');
+                        break;
+                }
+                return false;
+            });
+//                <%-------------------------- keyUp --------------------------%>
+            $(document).keyup(function (event) {
+                var k = event.keyCode || event.charCode;
+                switch (k) {
+                    case 16:
+                        window.xx = true;
+                        window.yy = true;
+                        $('#arrow_h').css('background-image', 'url(pic/arrow_h_green.png)');
+                        window.shiftDown = false;
+                        $("#div1").css('cursor', 'url(CSS/resize.cur),auto');
+                        break;
+                    case 17:
+                        window.xx = true;
+                        window.yy = true;
+                        $('#arrow_v').css('background-image', 'url(pic/arrow_v_green.png)');
+                        window.ctrlDown = false;
+                        $("#div1").css('cursor', 'url(CSS/resize.cur),auto');
+                        break;
+                    case 18:
+                        $("#div1").css('cursor', 'url(CSS/resize.cur),auto');
+                        window.altDown = false;
+                        break;
+                }
+            });
+//                <%-------------------------- перемещение картинки --------------------------%>
+            $('#img').draggable({
+                stop: function (event, ui) {
+                    current_img.top = ui.originalPosition.top;
+                    new_img.top = ui.position.top;
+                    current_img.left = ui.originalPosition.left;
+                    new_img.left = ui.position.left;
+                    tr_or();
+                },
+                start: function (event, ui) {
+                    if (window.shiftDown) {
+                        window.yy = true;
+                        current_img.left = ui.originalPosition.left;
+                        new_img.left = ui.position.left;
+                        $('#img').draggable("option", "axis", "y");
+                    }
+                    if (window.ctrlDown) {
+                        window.xx = true;
+                        current_img.top = ui.originalPosition.top;
+                        new_img.top = ui.position.top;
+                        $('#img').draggable("option", "axis", "x");
+                    }
+
+                    $('#img').draggable("option", "axis", false);
+                    if (!window.xx) {
+                        $('#img').draggable("option", "axis", "y");
+                    }
+                    if (!window.yy) {
+                        $('#img').draggable("option", "axis", "x");
+                    }
+                }
+            });
+
+
+            $('#v_line').css({
+                left: $('#crop').width() / 2,
+                top: 0
+            });
+            $('#mark').css({
+                left: $('#crop').width() / 2
+            });
+
+            $('#c1').attr('data-v', crop.id);
+
+            var v = 0;
+
+//            <%-------------------------- перемещение горизонтальных границ обрезки --------------------------%>
+            $('#mark_s').draggable({
+                axis: "y",
+                containment: "parent",
+                drag: function (event, ui) {
+                    var t = 345 - ui.position.top;
+                    setres(v < t ? x_xx : -x_xx);
+                    v = t;
+                },
+                revert: true,
+                revertDuration: 30
+            });
+
+
+//              <%-------------------------- перемещение вертикальных границ обрезки --------------------------%>
+            $('#mark').draggable({
+                axis: "x",
+                containment: "parent",
+                drag: function (event, ui) {
+                    crop.width = ui.position.left * 2;
+                    $('#crop').css({
+                        height: crop.height,
+                        width: crop.width,
+                        left: Cx - crop.width / 2 - 1,
+                        top: Cy - crop.height / 2 - 1
+                    });
+                    $('#v_line').css({
+                        left: $('#crop').width() / 2,
+                        top: 0
+                    });
+                }
+            });
+//                <%-------------------------- пермещение горизонтальных границ обрезки колесом --------------------------%>
+            $('#right_mark').mousewheel(function (event, delta) {
+                var crop_v = $('#crop').width() / 2;
+                if (crop.width === 700 && delta > 0) {
+                    return false;
+                } else if (crop.width === 0 && delta < 0) {
+                    return false;
+                } else {
+                    crop.width += delta > 0 ? 1 : -1;
+                }
+                $('#crop').css({
+                    height: crop.height,
+                    width: crop.width,
+                    left: Cx - crop.width / 2 - 1,
+                    top: Cy - crop.height / 2 - 1
+                });
+                $('#v_line').css({
+                    left: crop_v
+                });
+                $('#mark').css({
+                    left: crop_v
+                });
+                return false;
+            });
+
+//          <%-------------------------- перемещение горизонтальных границ --------------------------%>
+            $('#mark_b').draggable({
+                axis: "y",
+                containment: "parent",
+                drag: function (event, ui) {
+                    crop.height = 2 * (Cy - ui.position.top) - 2;
+                    $('#crop').css({
+                        height: crop.height,
+                        width: crop.width,
+                        left: Cx - crop.width / 2 - 1,
+                        top: Cy - crop.height / 2 - 1
+                    });
+                    $('#h_line').css({
+                        top: ui.position.top,
+                        left: 0
+                    });
+                }
+            });
+            $('#c2 span:eq(1)').css('color', '#00ff00');
+
+
+//                <%-------------------------- перемещение вертикалихых границ обрезки колесом --------------------------%>
+            $('#bottom_mark').mousewheel(function (event, delta) {
+                var crop_h = $('#crop').height() / 2;
+                if ($('#crop').height() === 700 && delta > 0) {
+                    return false;
+                } else if (crop.height === 0 && delta < 0) {
+                    return false;
+                } else {
+                    crop.height += delta > 0 ? 1 : -1;
+                }
+                $('#crop').css({
+                    height: crop.height,
+                    width: crop.width,
+                    left: Cx - crop.width / 2,
+                    top: Cy - crop.height / 2
+                });
+                $('#h_line').css({
+                    top: Cy - crop_h
+                });
+                $('#mark_b').css({
+                    top: Cy - crop_h
+                });
+                return false;
+            });
+
+
+//            <%-------------------------- запрет перемещения --------------------------%>
+            $(document).on('click', '#arrow_h', function () {
+                if (window.xx) {
+                    $('#arrow_h').css('background-image', 'url(pic/arrow_h_red.png)');
+                } else {
+                    $('#arrow_h').css('background-image', 'url(pic/arrow_h_green.png)');
+                }
+                window.xx = !window.xx;
+            });
+
+            $(document).on('click', '#arrow_v', function () {
+                if (window.yy) {
+                    $('#arrow_v').css('background-image', 'url(pic/arrow_v_red.png)');
+                } else {
+                    $('#arrow_v').css('background-image', 'url(pic/arrow_v_green.png)');
+                }
+                window.yy = !window.yy;
+            });
+
+
+//            <%-------------------------- скорость ресайза --------------------------%>
+            $(document).on('click', '#c2', function () {
+                if (x_xx === 0.001) {
+                    $('#c2 span:eq(1)').css('color', '#00ff00');
+                    $('#c2 span:eq(0)').css('color', '#000000');
+                    x_xx = 0.01;
+                } else {
+                    $('#c2 span:eq(0)').css('color', '#00ff00');
+                    $('#c2 span:eq(1)').css('color', '#000000');
+                    x_xx = 0.001;
+                }
+            });
+
+//            <%-------------------------- ресайз + перемещкние + поворот (мышь в поле для картинки --------------------------%>
+            $('#div1').mousewheel(function (event, delta) {
+
+//                 <%-------------------------- shiftDown + mousewheel - > перемещение по вертикали --------------------------%>
+                if (window.shiftDown) {
+                    new_img.top = delta > 0 ? current_img.top + 1 : current_img.top - 1;
+                    new_img.left = current_img.left;
+                    tr_or();
+                }
+//                <%--------------------------  ctrlDown + mousewheel - > перемещение по горионтали --------------------------%>
+                if (window.ctrlDown) {
+                    new_img.left = delta > 0 ? current_img.left + 1 : current_img.left - 1;
+                    new_img.top = current_img.top;
+                    tr_or();
+                }
+//               <%-------------------------- поворот --------------------------%>
+                if (window.altDown) {
+                    img.rotate = parseInt($('#rotate').val());
+                    img.rotate += delta > 0 ? 1 : -1;
+                    $('#rotate').val(img.rotate);
+                    set_css_img();
+                    return false;
+                }
+//               <%-------------------------- изменение размера --------------------------%>
+                if (!window.ctrlDown && !window.shiftDown) {
+                    setres(delta > 0 ? x_xx : -x_xx);
+                }
+                return false;
+            }).mousedown(function (event) {
+                document.getElementById('div1').style = 'cursor:url(CSS/move.cur),auto;';
+                event.preventDefault();
+//                $(this).css('cursor', 'url(CSS/move.cur),auto');
+            }).mouseup(function () {
+                $(this).css('cursor', 'url(CSS/resize.cur),auto');
+            });
+
+            function setres(p) {
+                img.scale += p;
+
+                var new_h = img.height * img.scale;
+                new_img.x = new_img.x * new_h / new_img.height;
+                new_img.height = new_h;
+
+                var new_w = img.width * img.scale;
+                new_img.y = new_img.y * new_w / new_img.width;
+                new_img.width = new_w;
+
+                current_img.x = new_img.x;
+                current_img.y = new_img.y;
+                new_img.top = (Cy - new_img.y);
+                new_img.left = (Cx - new_img.x);
+                set_css_img();
+            }
+
+            function set_css_img() {
+                var ang = -1 * img.rotate * deg_to_rad;
+                matrix[0] = Math.cos(ang);
+                matrix[1] = -1 * Math.sin(ang);
+                matrix[2] = Math.sin(ang);
+                matrix[3] = Math.cos(ang);
+                matrix[4] = 0;
+                matrix[5] = 0;
+
+                $('#img').css({
+                    'width': (img.width * img.scale),
+                    'height': (img.height * img.scale),
+                    'transform-origin': new_img.x + 'px ' + new_img.y + 'px',
+                    'top': new_img.top,
+                    'left': new_img.left,
+                    'transform': 'matrix(' + matrix.join(',') + ')'
+                });
+            }
+
+//            <%-------------------------- поворот ползунком  --------------------------%>
+            $(document).on('input', '#rotate', function () {
+                img.rotate = parseInt($('#rotate').val());
+                set_css_img();
+            });
+
+//            <%-------------------------- поворот колесом мыши --------------------------%>
+            $('#rotate').mousewheel(function (event, delta) {
+                img.rotate = parseInt($('#rotate').val());
+                img.rotate += delta > 0 ? 1 : -1;
+                $('#rotate').val(img.rotate);
+                set_css_img();
+                return false;
+            });
+
+//            <%-------------------------- загрузка файла --------------------------%>
+            var fb = [];
+
+            document.getElementById('file').addEventListener('change', function (evt) {
+                var n = evt.target.files.length;
+                var g = n;
+                var name_files = [];
+                var a = 0;
+                var a1 = 0;
+                var x = document.getElementById('list_files');
+                for (var i = 0; i < n; i++) {
+                    var reader = new FileReader();
+                    name_files.push('<span id="file' + i + '">' + this.files[i].name + ' &nbsp; &nbsp; &nbsp;</span>');
+                    reader.onload = function (e) {
+                        --g;
+                        document.getElementById("list_files").innerHTML += name_files[a];
+                        var pic = new Image();
+                        pic.src = e.target.result;
+                        pic.nn = a++;
+                        fb.push(pic);
+                        if (g === 0) {
+                            work();
+                        }
+                    };
+                    reader.readAsDataURL(this.files[i]);
+                }
+            }, false);
+
+
+            var target = document.getElementById("div1");
+            target.addEventListener("dragover", function (event) {
+                event.preventDefault(); // отменяем действие по умолчанию
+            }, false);
+
+            target.addEventListener("drop", function (event) {
+                // отменяем действие по умолчанию
+                event.preventDefault();
+                var files = event.dataTransfer.files;
+                var n = files.length;
+                var g = n;
+                var a = 0;
+                var name_files = [];
+                for (var i = 0; i < n; i++) {
+                    var reader = new FileReader();
+                    name_files.push('<span id="file' + i + '">' + event.dataTransfer.files[i].name + ' &nbsp; &nbsp; &nbsp;</span>');
+                    reader.onload = function (e) {
+                        --g;
+                        $('#list_files').append(name_files.shift());
+                        var pic = new Image();
+                        pic.src = e.target.result;
+                        pic.nn = a++;
+                        fb.push(pic);
+                        if (g === 0) {
+                            work();
+                        }
+                    };
+                    reader.readAsDataURL(event.dataTransfer.files[i]);
+                }
+            }, true);
+
+
+
+
+            function work() {
+                if (fb.length === 0) {
+                    window.close();
+                }
+                var pic = new Image();
+                pic.src = fb[0].src;
+                console.log();
+                $('#list_files').find('#file' + (fb[0].nn - 1)).css('color', 'green');
+                $('#list_files').find('#file' + fb[0].nn).css('color', 'red');
+                fb.shift();
+                $('#img').attr('src', pic.src);
+                img.scale = 700 / parseInt(pic.width);
+                img.height = parseInt(pic.height);
+                img.width = parseInt(pic.width);
+                $('#img').height(img.height * img.scale);
+                $('#img').width(img.width * img.scale);
+                current_img.height = $('#img').height();
+                current_img.width = $('#img').width();
+                new_img.height = $('#img').height();
+                new_img.width = $('#img').width();
+                current_img.top = 0;
+                current_img.left = 0;
+                new_img.top = 0;
+                new_img.left = 0;
+                current_img.x = $('#div1').width() / 2;
+                current_img.y = $('#div1').height() / 2;
+                new_img.x = $('#div1').width() / 2;
+                new_img.y = $('#div1').height() / 2;
+
+                img.rotate = 0;
+                $('#rotate').val(0);
+                tr_or();
+            }
+
+//            <%-------------------------- обрезка --------------------------%>
+            $(document).on('click', '#crop_button', function () {
+                console.time('x1');
+                if ($('.cropped').has($('#' + $('#c1').attr('data-v'))).length !== 0) {
+                    return;
+                }
+
+                if (crop.id === 'full') {
+                    cropImg |= 2;
+                }
+                if (crop.id === 'preview') {
+                    cropImg |= 1;
+                }
+                if (cropImg === 3) {
+                    $('#save').removeAttr('disabled');
+                }
+                var canvas_tmp = document.createElement('canvas');
+                var canvas = document.createElement("canvas");
+                var context = canvas.getContext("2d");
+
+                var pic = new Image();
+                pic.src = $('#img').attr('src');
+                var sq = Math.sqrt(crop.width * crop.width + crop.height * crop.height);
+
+                var x = Math.floor((new_img.x - sq / 2) / img.scale);
+                var y = Math.floor((new_img.y - sq / 2) / img.scale);
+                var w = Math.floor(sq / img.scale);
+                var h = Math.floor(sq / img.scale);
+
+                canvas.height = h;
+                canvas.width = w;
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, w, h);
+                context.drawImage(pic, x, y, w, h, 0, 0, w, h);
+
+                canvas_tmp.height = sq;
+                canvas_tmp.width = sq;
+                if (img.scale < 1) {
+                    canvas_tmp.getContext('2d').drawImage(resize(canvas, sq, sq), 0, 0);
+                } else {
+                    canvas_tmp.getContext('2d').drawImage(canvas, 0, 0, sq, sq);
+                }
+
+                canvas.height = sq;
+                canvas.width = sq;
+
+                context.translate(sq / 2, sq / 2);
+                context.rotate((img.rotate * Math.PI) / 180);
+                context.drawImage(canvas_tmp, -sq / 2, -sq / 2);
+
+
+                canvas_tmp.height = canvas.height;
+                canvas_tmp.width = canvas.width;
+                canvas_tmp.getContext('2d').drawImage(canvas, 0, 0);
+
+                canvas.height = crop.height;
+                canvas.width = crop.width;
+                x = (sq - crop.width) / 2;
+                y = (sq - crop.height) / 2;
+
+                context.drawImage(canvas_tmp, x, y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+
+                var k = crop.id === 0 ? 1.0 : 0.75;
+                document.querySelector('.cropped').innerHTML += '<div ><img id="' + crop.id + '" src="' + canvas.toDataURL("image/jpeg", k) + '"></div>';
+                $('#' + crop.id).parent().append('<img src="pic/del_.png" class="del"  width="18" height="18" alt="del"/>');
+                console.timeEnd('x1');
+                $('#c1').trigger('click');
+            });
+
+
+//            <%-------------------------- пошаговое уменьшение картинки --------------------------%>
+            function resize(img, w, h) {
+                var steps = Math.ceil(Math.log(img.height / h) / Math.LN2);
+                var sW = w * Math.pow(2, steps - 1);
+                var sH = h * Math.pow(2, steps - 1);
+                while ((steps--)) {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = sW;
+                    canvas.height = sH;
+                    canvas.getContext('2d').drawImage(img, 0, 0, sW, sH);
+                    img = canvas;
+                    sW = Math.round(sW / 2);
+                    sH = Math.round(sH / 2);
+                }
+                return canvas;
+            }
+
+
+//            <%-------------------------- удаление обрезанной картинки --------------------------%>
+            $(document).on('click', '.del', function () {
+                var t = $(this).parent();
+                if ($(t).find('img:first').attr('id') === 'full') {
+                    cropImg &= ~2;
+                }
+
+                if ($(t).find('img:first').attr('id') === 'preview') {
+                    cropImg &= ~1;
+                }
+                $('#save').attr('disabled', 'disabled');
+                t.remove();
+
+            });
+
+
+
+            $(document).on('click', '#save', function () {
+                var v = $(window.opener.document.getElementById("block_screen").shadowRoot.getElementById("img_box"));
+//                var w = v.clone();
+//                v.removeAttr('id');
+//                v.attr('data-pic', 'new');
+                v.append('<img  class="imggg" src="' + $('#' + id_crop[0]).attr('src') + '"   height="70"   data-img="' + $('#' + id_crop[1]).attr('src') + '"/>');
+//                v.find('button img').attr('src', 'pic/del.webp');
+//                v.parent().append(w);
+                $('.cropped').empty();
+//                $('#c1').trigger('click');
+                $('#save').attr('disabled', 'disabled');
+                cropImg = 0;
+                work();
+//                window.close();
+            });
+
+
+        </script>
+
+    </body>
+</html>

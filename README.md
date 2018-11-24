@@ -1,5 +1,4 @@
-# crop_full_preview.github.io
-кадрирование (обрезка) картинок для просмотра и превью
+
 
 https://jonhappy.github.io/modal_menu/<br>
 <b>примеры модального меню с вызываемого по правой кнопке</b><br>

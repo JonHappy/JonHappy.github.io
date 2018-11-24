@@ -749,7 +749,7 @@
                 v.append('<img  class="imggg" src="' + $('#' + id_crop[0]).attr('src') + '"   height="70"   data-img="' + $('#' + id_crop[1]).attr('src') + '"/>');
 //                v.find('button img').attr('src', 'pic/del.webp');
 //                v.parent().append(w);
-                $('.cropped').empty();
+                document.querySelector('#cropped').innerHTML = '';
 //                $('#c1').trigger('click');
                 $('#save').attr('disabled', 'disabled');
                 cropImg = 0;

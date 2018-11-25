@@ -14,6 +14,13 @@
 
         <link href="CSS/page.css" rel="stylesheet" type="text/css"/>
         <link rel="icon" type="image/png" href="pic/arrow_ltr2.png" />
+        <style id="st1">
+            :root{
+                --full_img_top: 100px;
+                --full_img_left: 200px;
+
+            }
+        </style>
     </head>
     <body>
 
@@ -165,8 +172,11 @@
                         var im = event.target;
                         var el = document.createElement('img');
                         el.setAttribute('src', im.getAttribute('data-img'));
-                        var div = '<div id="full_img"  style="position: absolute; top: 50px; left: 100px; z-index: 800;"  ><img class="del_full" src="pic/del_.png" alt=""></div>';
+                        var div = '<div id="full_img"  style="position: absolute;  z-index: 800;"   draggable="true" ><img class="del_full" src="pic/del_.png" alt=""></div>';
                         document.body.insertAdjacentHTML('beforeEnd', div);
+                        var fi = document.getElementById('full_img');
+                        fi.style.top = 'var(--full_img_top)';
+                        fi.style.left = 'var(--full_img_left)';
                         var x_img = document.querySelector('.del_full');
                         x_img.style.position = 'absolute';
                         x_img.style.top = '0px';
@@ -174,14 +184,42 @@
                         x_img.style.zIndex = '800';
                         document.getElementById('full_img').insertAdjacentElement('beforeEnd', el);
 
-
-
                         document.querySelector("#full_img .del_full").addEventListener('click', del_full);
 
                         function del_full() {
                             document.getElementById('full_img').removeEventListener('click', del_full);
                             document.getElementById('full_img').remove();
                         }
+
+
+                        var root1 = document.getElementById('full_img');
+                        (function (root) {
+                            root.st = document.documentElement.style;
+
+                            root.addEventListener("mousedown", evt => {
+                                root.clientX = parseInt(getComputedStyle(root, null).getPropertyValue('--full_img_left'));
+                                root.clientY = parseInt(getComputedStyle(root, null).getPropertyValue('--full_img_top'));
+                                root.dxx = (evt.clientX - root.clientX);
+                                root.dyy = (evt.clientY - root.clientY);
+                                document.documentElement.addEventListener("mousemove", controls_m_move);
+                                document.documentElement.addEventListener("mouseup", controls_remove);
+                            });
+                            root.ondragstart = function () {
+                                return false;
+                            };
+                            function controls_m_move(evt) {
+                                root.clientX = parseInt(getComputedStyle(root, null).getPropertyValue('--full_img_left')) + (evt.clientX - root.clientX) - root.dxx;
+                                root.clientY = parseInt(getComputedStyle(root, null).getPropertyValue('--full_img_top')) + (evt.clientY - root.clientY) - root.dyy;
+
+                                root.st.setProperty("--full_img_left", root.clientX + 'px');
+                                root.st.setProperty("--full_img_top", root.clientY + 'px');
+                            }
+                            function controls_remove() {
+                                document.documentElement.removeEventListener("mousemove", controls_m_move);
+                                document.documentElement.removeEventListener("mouseup", controls_remove);
+                            }
+
+                        })(root1);
 
 
                     }

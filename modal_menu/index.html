@@ -32,10 +32,10 @@
 
             $('#tbl1 .t1').hover(
                     function () {
-                        $(this).css('background','#ff0000');
+                        $(this).css('background', '#ff0000');
                     },
                     function () {
-                        $(this).css('background','none');
+                        $(this).css('background', 'none');
                     });
 
 
@@ -136,6 +136,8 @@
                 .imggg{
                     padding-right: 5px;
                 }
+
+
             </style>
 
             <div id="main">
@@ -152,10 +154,39 @@
 
                 var x = document.getElementById('block_screen').shadowRoot;
                 $(x.getElementById('main')).draggable();
-                console.log($(x.getElementById('img_add')));
-                $(x.getElementById("img_add")).on('click',function (){
-                    console.log('999999999');
-                    var wo = window.open('\pic.html', '00000');
+
+
+                x.getElementById('img_box').addEventListener('click', function (event) {
+
+                    if (event.target.id === 'img_add') {
+                        var wo = window.open('\pic.html', '00000');
+                    }
+                    if (event.target.className === 'imggg') {
+                        var im = event.target;
+                        var el = document.createElement('img');
+                        el.setAttribute('src', im.getAttribute('data-img'));
+                        var div = '<div id="full_img"  style="position: absolute; top: 50px; left: 100px; z-index: 800;"  ><img class="del_full" src="pic/del_.png" alt=""></div>';
+                        document.body.insertAdjacentHTML('beforeEnd', div);
+                        var x_img = document.querySelector('.del_full');
+                        x_img.style.position = 'absolute';
+                        x_img.style.top = '0px';
+                        x_img.style.right = '0px';
+                        x_img.style.zIndex = '800';
+                        document.getElementById('full_img').insertAdjacentElement('beforeEnd', el);
+
+
+
+                        document.querySelector("#full_img .del_full").addEventListener('click', del_full);
+
+                        function del_full() {
+                            document.getElementById('full_img').removeEventListener('click', del_full);
+                            document.getElementById('full_img').remove();
+                        }
+
+
+                    }
+
+
                 });
             </script>
         </template>
@@ -356,7 +387,7 @@
                     $(w.obj).html($(this).html());
                     w.close();
                     return false;
-                },true);
+                }, true);
 
             </script>
         </template>

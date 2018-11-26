@@ -45,16 +45,6 @@
                         $(this).css('background', 'none');
                     });
 
-
-
-
-
-
-
-
-
-
-
             function modal(name, callback_prefix) {
                 this.name = name;
                 this.callback = callback_prefix + '_' + name + '_';
@@ -73,7 +63,7 @@
                         'left': 0,
                         'z-index': 500
                     });
-                    var root = block_screen.createShadowRoot();
+                    var root = block_screen.attachShadow({mode: 'open'});
                     root.appendChild(modd.content.cloneNode(true));
                     var mod = root.getElementById('title_img');
                     $(mod).on('click', {xx: this}, function (ev) {
@@ -169,14 +159,16 @@
                         var wo = window.open('\pic.html', '00000');
                     }
                     if (event.target.className === 'imggg') {
+                        del_full();
                         var im = event.target;
                         var el = document.createElement('img');
                         el.setAttribute('src', im.getAttribute('data-img'));
-                        var div = '<div id="full_img"  style="position: absolute;  z-index: 800;"   draggable="true" ><img class="del_full" src="pic/del_.png" alt=""></div>';
+                        var div = '<div id="full_img" style="position: absolute; z-index: 800;"><img class="del_full" src="pic/del_.png" alt=""></div>';
                         document.body.insertAdjacentHTML('beforeEnd', div);
                         var fi = document.getElementById('full_img');
                         fi.style.top = 'var(--full_img_top)';
                         fi.style.left = 'var(--full_img_left)';
+
                         var x_img = document.querySelector('.del_full');
                         x_img.style.position = 'absolute';
                         x_img.style.top = '0px';
@@ -187,12 +179,15 @@
                         document.querySelector("#full_img .del_full").addEventListener('click', del_full);
 
                         function del_full() {
-                            document.getElementById('full_img').removeEventListener('click', del_full);
-                            document.getElementById('full_img').remove();
+                            try {
+                                document.getElementById('full_img').removeEventListener('click', del_full);
+                                document.getElementById('full_img').remove();
+                            } catch (er) {
+                            }
+
                         }
 
 
-                        var root1 = document.getElementById('full_img');
                         (function (root) {
                             root.st = document.documentElement.style;
 
@@ -219,7 +214,7 @@
                                 document.documentElement.removeEventListener("mouseup", controls_remove);
                             }
 
-                        })(root1);
+                        })(document.getElementById('full_img'));
 
 
                     }
@@ -230,15 +225,15 @@
         </template>
 
         <script>
-            function menu(menu_, name, obj_) {
+            function menu(menu_, obj_) {
                 this.menu = menu_;
-                this.name = name;
+
                 this.obj = obj_;
                 this.init();
             }
             menu.prototype = {
                 init: function () {
-                    $('body').append('<div id="block_screen"></div>');
+                    document.body.insertAdjacentHTML('beforeEnd', '<div id="block_screen"></div>');
                     this.block_screen = $('#block_screen');
                     this.main_div = this.name + "_maindiv";
                     $(this.block_screen).css({
@@ -255,7 +250,7 @@
                     $(this.block_screen).on('click', {xx: this}, function (ev) {
                         ev.data.xx.close();
                     });
-                    var root = block_screen.createShadowRoot();
+                    var root = block_screen.attachShadow({mode: 'open'});
                     root.appendChild(this.menu.content.cloneNode(true));
 
 
@@ -272,8 +267,7 @@
                     });
                 },
                 close: function (p) {
-                    $('#block_screen').remove();
-//                    $('#' + this.main_div).remove();
+                    document.getElementById('block_screen').remove();
                 }
             };
 
@@ -281,16 +275,19 @@
 
 
             var menus;
-            $('.t1').on('contextmenu', function () {
-                menus = new menu(menu1, 'menus', this);
-                return false;
+            document.getElementById('tbl1').addEventListener('contextmenu', function (e) {
+                e.preventDefault();
+                if (e.target.className === 't1') {
+                    menus = new menu(menu1, e.target);
+                    return false;
+                }
+                if (e.target.className === 't2') {
+                    menus = new menu(menu2, e.target);
+                    return false;
+                }
             });
 
 
-            $('.t2').on('contextmenu', function () {
-                menus = new menu(menu2, 'menus', this);
-                return false;
-            });
 
 
 
@@ -341,27 +338,20 @@
                 </table>
             </div>
             <script>
-                var w;
-                setTimeout(fun, 0);
-                function fun() {
-                    w = menus;
-                    console.log(w);
-                }
                 var x = document.getElementById('block_screen').shadowRoot;
                 var p = x.getElementById('main');
 //                $(p).draggable();
-                $(p).on('click', function (ev) {
-                    ev.stopPropagation();
-                });
 
-                $(p).find('.tb1').on('click', function () {
-                    $(w.obj).html($(this).html());
-                    w.close();
-                });
+                p.addEventListener('click', xxx);
+                function xxx(ev) {
+                    ev.stopPropagation();
+                    if (ev.target.className === 'tb1') {
+                        menus.obj.innerText = ev.target.innerText;
+                        menus.close();
+                    }
+                }
             </script>
         </template>
-        <!--На сайте мозиллы говорится что функция createShadowRoot() более не используется. Вместо нее необходимо использовать attachShadow()
-        https://developer.mozilla.org/...-->
 
         <template id="menu2">
             <style>
@@ -406,26 +396,18 @@
                 </table>
             </div>
             <script>
-                var w;
-                setTimeout(fun, 0);
-                function fun() {
-                    w = menus;
-                    console.log(w);
-                }
-                var x = document.getElementById('block_screen').shadowRoot;
+               var x = document.getElementById('block_screen').shadowRoot;
                 var p = x.getElementById('main');
 //                $(p).draggable();
-                $(p).on('click', function (ev) {
-                    ev.stopPropagation();
-                });
 
-                $(p).find('.tb1').on('click', function (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    $(w.obj).html($(this).html());
-                    w.close();
-                    return false;
-                }, true);
+                p.addEventListener('click', xxx);
+                function xxx(ev) {
+                    ev.stopPropagation();
+                    if (ev.target.className === 'tb1') {
+                        menus.obj.innerText = ev.target.innerText;
+                        menus.close();
+                    }
+                }
 
             </script>
         </template>

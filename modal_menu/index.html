@@ -4,8 +4,8 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>index</title>
-        <script src="js/jquery/external/jquery/jquery.js" type="text/javascript"></script>
-        <script src="js/jquery/jquery-ui.js" type="text/javascript"></script>
+<!--        <script src="js/jquery/external/jquery/jquery.js" type="text/javascript"></script>
+        <script src="js/jquery/jquery-ui.js" type="text/javascript"></script>-->
         <!--<script src="js/jquery/datepicker-ru.js" type="text/javascript"></script>-->
         <!--<link href="js/jquery/jquery-ui.css" rel="stylesheet" type="text/css"/>-->
         <!--<link href="js/jquery/jquery-ui.structure.min.css" rel="stylesheet" type="text/css"/>-->
@@ -19,31 +19,33 @@
                 --full_img_top: 100px;
                 --full_img_left: 200px;
 
+                --modd_top:200px;
+                --modd_left:200px
+
             }
+            .t1:focus{
+                background:  #ff00ff;
+            }
+            .t1:hover{
+                background:#ff0000;
+            }
+
         </style>
     </head>
     <body>
 
         <table id="tbl1">
-            <tr><td class="t1">gggggg</td><td class="t2">gggggg</td></tr>
-            <tr><td class="t1">gggggg</td><td class="t2">gggggg</td></tr>
-            <tr><td class="t1">gggggg</td><td class="t2">gggggg</td></tr>
-            <tr><td class="t1">gggggg</td><td class="t2">gggggg</td></tr>
-            <tr><td class="t1">gggggg</td><td class="t2">gggggg</td></tr>
+            <tr><td class="t1" tabindex="-1">gggggg</td><td class="t2">gggggg</td></tr>
+            <tr><td class="t1" tabindex="-1">gggggg</td><td class="t2">gggggg</td></tr>
+            <tr><td class="t1" tabindex="-1">gggggg</td><td class="t2">gggggg</td></tr>
+            <tr><td class="t1" tabindex="-1">gggggg</td><td class="t2">gggggg</td></tr>
+            <tr><td class="t1" tabindex="-1">gggggg</td><td class="t2">gggggg</td></tr>
         </table>
         <input id="xx" value="xxxx" type="button">
 
         <script>
             "use strict";
 
-
-            $('#tbl1 .t1').hover(
-                    function () {
-                        $(this).css('background', '#ff0000');
-                    },
-                    function () {
-                        $(this).css('background', 'none');
-                    });
 
             function modal(name, callback_prefix) {
                 this.name = name;
@@ -52,39 +54,41 @@
             }
             modal.prototype = {
                 init: function () {
-                    $('body').append('<div id="block_screen"></div>');
-                    this.block_screen = $('#block_screen');
+                    document.body.insertAdjacentHTML('beforeEnd', '<div id="block_screen"></div>');
                     this.main_div = this.name + "_maindiv";
-                    $(this.block_screen).css({
-                        'width': '100%',
-                        'height': '100%',
-                        'position': 'absolute',
-                        'top': 0,
-                        'left': 0,
-                        'z-index': 500
-                    });
+
+                    this.block_screen = document.querySelector('#block_screen');
+                    this.block_screen.style.width = '100%';
+                    this.block_screen.style.height = '100%';
+                    this.block_screen.style.position = 'absolute';
+                    this.block_screen.style.top = 0;
+                    this.block_screen.style.left = 0;
+                    this.block_screen.style.zIndex = 500;
+
                     var root = block_screen.attachShadow({mode: 'open'});
                     root.appendChild(modd.content.cloneNode(true));
                     var mod = root.getElementById('title_img');
-                    $(mod).on('click', {xx: this}, function (ev) {
-//                        con.send(ev.data.xx.callback + 'close|555');
-                        ev.data.xx.close();
-                    });
+
+                    mod.addEventListener('click', cl.bind(this));
+                    function cl() {
+                        mod.removeEventListener('click', cl);
+                        this.close();
+                    }
+
                 },
-                close: function (p) {
-                    $('#block_screen').remove();
-//                    $('#' + this.main_div).remove();
+                close: function () {
+                    document.getElementById('block_screen').remove();
                 }
             };
 
             var mod;
-
-            $('#xx').on('click', function () {
+            document.getElementById('xx').addEventListener('click', function () {
                 mod = new modal('mod', 'yyy31');
             });
         </script>
         <template id="modd">
             <style>
+
                 #main{
                     position: relative;
                     top: 300px;
@@ -150,7 +154,38 @@
 
 
                 var x = document.getElementById('block_screen').shadowRoot;
-                $(x.getElementById('main')).draggable();
+
+                let s = x.getElementById('main');
+                s.style.top = 'var(--modd_top)';
+                s.style.left = 'var(--modd_left)';
+                (function (root) {
+                    root.st = document.documentElement.style;
+
+                    root.addEventListener("mousedown", evt => {
+                        root.clientX = parseInt(getComputedStyle(root, null).getPropertyValue('--modd_left'));
+                        root.clientY = parseInt(getComputedStyle(root, null).getPropertyValue('--modd_top'));
+                        root.dxx = (evt.clientX - root.clientX);
+                        root.dyy = (evt.clientY - root.clientY);
+                        document.documentElement.addEventListener("mousemove", controls_m_move);
+                        document.documentElement.addEventListener("mouseup", controls_remove);
+                    });
+                    root.ondragstart = function () {
+                        return false;
+                    };
+                    function controls_m_move(evt) {
+                        root.clientX = parseInt(getComputedStyle(root, null).getPropertyValue('--modd_left')) + (evt.clientX - root.clientX) - root.dxx;
+                        root.clientY = parseInt(getComputedStyle(root, null).getPropertyValue('--modd_top')) + (evt.clientY - root.clientY) - root.dyy;
+
+                        root.st.setProperty("--modd_left", root.clientX + 'px');
+                        root.st.setProperty("--modd_top", root.clientY + 'px');
+                    }
+                    function controls_remove() {
+                        document.documentElement.removeEventListener("mousemove", controls_m_move);
+                        document.documentElement.removeEventListener("mouseup", controls_remove);
+                    }
+
+                })(s);
+
 
 
                 x.getElementById('img_box').addEventListener('click', function (event) {
@@ -227,47 +262,51 @@
         <script>
             function menu(menu_, obj_) {
                 this.menu = menu_;
-
                 this.obj = obj_;
                 this.init();
             }
             menu.prototype = {
                 init: function () {
                     document.body.insertAdjacentHTML('beforeEnd', '<div id="block_screen"></div>');
-                    this.block_screen = $('#block_screen');
                     this.main_div = this.name + "_maindiv";
-                    $(this.block_screen).css({
-                        'width': '100%',
-                        'height': '100%',
-                        'position': 'absolute',
-                        'top': 0,
-                        'left': 0,
-                        'z-index': 500
-                    });
-                    $(this.block_screen).on('contextmenu', {xx: this}, function (ev) {
-                        return false;
-                    });
-                    $(this.block_screen).on('click', {xx: this}, function (ev) {
-                        ev.data.xx.close();
-                    });
+
+
+                    this.block_screen = document.querySelector('#block_screen');
+                    this.block_screen.style.width = '100%';
+                    this.block_screen.style.height = '100%';
+                    this.block_screen.style.position = 'absolute';
+                    this.block_screen.style.top = 0;
+                    this.block_screen.style.left = 0;
+                    this.block_screen.style.zIndex = 500;
+
+                    this.block_screen.addEventListener('click', cl.bind(this));
+                    this.block_screen.addEventListener('contextmenu', cl.bind(this));
+
+                    function cl(e) {
+                        e.preventDefault();
+                        this.block_screen.removeEventListener('click', cl);
+                        this.block_screen.removeEventListener('contextmenu', cl);
+                        this.close();
+                    }
+
                     var root = block_screen.attachShadow({mode: 'open'});
                     root.appendChild(this.menu.content.cloneNode(true));
 
-
                     var main = root.getElementById('main');
-                    var t = $(this.obj).offset().top;
-                    var l = $(this.obj).offset().left;
-                    $(main).css({
-                        'top': (15 + t),
-                        'left': (30 + l)
-                    });
-                    $(root.getElementById('title_img')).on('click', {xx: this}, function (ev) {
-//                        con.send(ev.data.xx.callback + 'close|555');
-                        ev.data.xx.close();
-                    });
+                    var t = this.obj.getBoundingClientRect().top;
+                    var l = this.obj.getBoundingClientRect().left;
+                    main.style.top = 15 + t + 'px';
+                    main.style.left = 30 + l + 'px';
+
+//                    $(root.getElementById('title_img')).on('click', {xx: this}, function (ev) {
+////                        con.send(ev.data.xx.callback + 'close|555');
+//                        ev.data.xx.close();
+//                    });
                 },
                 close: function (p) {
+                    var x = this.obj;
                     document.getElementById('block_screen').remove();
+                    x.focus();
                 }
             };
 
@@ -396,7 +435,7 @@
                 </table>
             </div>
             <script>
-               var x = document.getElementById('block_screen').shadowRoot;
+                var x = document.getElementById('block_screen').shadowRoot;
                 var p = x.getElementById('main');
 //                $(p).draggable();
 

@@ -133,7 +133,6 @@
         <button id="crop_button"  disabled="">обрезать</button>
         <button id="save" disabled="" >Сохранить</button>
         <button id="c1"><span style="color: #00ff00;">full</span>/<span>preview</span></button>
-        <button onclick="fufu();">выполнить</button>
     </div>
     <div id="cropped"></div>
 
@@ -804,13 +803,6 @@
                 document.documentElement.removeEventListener("mouseup", controls_remove);
             }
         })(document.getElementById('div_head'));
-        
-        
-        
-        function fufu(){
-            window.opener.fufufu();
-        }
-        
     </script>
 
 </body>

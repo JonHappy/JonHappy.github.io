@@ -1,4 +1,9 @@
 
+https://jonhappy.github.io/modal_menu/pic.html
+часть от https://jonhappy.github.io/modal_menu/ , можно использовать как самостоятельную страницу.<br>
+тоже самое , что и https://jonhappy.github.io
+Если используется как самомтоятельная страница - сохраняет кадрированные изображения на локальный диск.<br>
+Если вызывается из  https://jonhappy.github.io/modal_menu/ то сохраняет кадрирванные изображения на стренице-родителе.
 
 https://jonhappy.github.io/modal_menu/<br>
 (c использованием тэга  template)<br>

@@ -87,7 +87,7 @@ button#arrow_v{
 #cropped img{
     max-width: 100%;
     align-self: flex-start;
-    padding-bottom: 10px;
+    /*padding-bottom: 10px;*/
 }
 
 .del{

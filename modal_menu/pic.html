@@ -684,7 +684,16 @@
                     var y = parseInt((sq - crop_height) / 2);
                     canvas.getContext("2d").drawImage(pic, x, y, crop_width, crop_height, 0, 0, crop_width, crop_height);
                     var k = crop.id === 0 ? 1.0 : 1.0;
-                    document.querySelector('#cropped').insertAdjacentHTML('beforeEnd', '<div ><img id="' + crop.id + '" src="' + canvas.toDataURL("image/jpeg", k) + '"><img src="pic/del.png" class="del"  width="18" height="18" alt="del"/></div>');
+                    let cropped = document.querySelector('#cropped');
+                    
+                    if (cropped.querySelector('#'+crop.id) !== null) {
+                        cropped.querySelector('#'+crop.id).remove();
+                    }
+                    
+                    let place=crop.id==='full'?'afterBegin':'beforeEnd';
+                    
+                    cropped.insertAdjacentHTML(place,
+                            '<div ><img id="' + crop.id + '" src="' + canvas.toDataURL("image/jpeg", k) + '"><img src="pic/del.png" class="del"  width="18" height="18" alt="del"/></div>');
                     document.getElementById('c1').click();
 
                     cropImg = crop.id === id_crop[1] ? (cropImg | 2) : (cropImg | 1);

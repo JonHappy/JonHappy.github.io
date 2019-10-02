@@ -107,6 +107,14 @@
                 background: aquamarine;
                 margin-left: -5px;
             }
+            #div_help{
+                background-color: #ddd;
+                position: absolute;
+                top: 0px;
+                right: 10px;
+                z-index: 900;
+                display: none;
+            }
         </style>
     </head>
     <body>
@@ -133,10 +141,45 @@
             <br>
             <button id="crop_button"  disabled="">обрезать</button>
             <button id="save" disabled="" >Сохранить</button>
-            <button id="c1"><span style="color: #00ff00;">full</span>/<span>preview</span></button>
+            <button id="c1"><span style="color: #00ff00;">full</span>/<span>preview</span></button><br>
+            <button id="bt_help>" onclick="help();">help</button>
         </div>
         <div id="cropped"></div>
+        <div id="div_help">
+            <img src="pic/del.png" alt="" onclick="close_help();"/><pre>
+            кадрирование (обрезка) картинок для просмотра и превью
 
+
+можно загружать по несколько картинок за раз
+
+слайдер слева - поворачивает картинку отностельно центра, шаг 1 градус
+При нахождении указателя мыши в зоне картинки возможны действия
+
+колесо мыши - увеличение/уменьшение картинки
+(кнопка x/xx задаёт коэффициент ресайза - x = 0.001, хх = 0.01 / зелёным цветом выбранный коэффициент)
+
+Shift + колесо мыши - перемещение картинки только по вертикали на 1 пиксел
+
+Ctrl + колесо мыши - перемещение картинки только по горизонтали на 1 пиксел
+(индикация стрелками на блоке управлени
+зеленые: разрешенное напрвление
+красные: запрещённое направление)
+
+Alt + колесо мыши - поворот на 0.1 градуса
+
+слайдер внизу - задаёт размер обрезки по вертикали
+
+слайдер справа -задаёт размер обрезки по горизонтали
+управление: перемещением красного бегунка мышью или колесом, при нахождении указателя мыши в зоне слайдера
+
+самый крайний слайдер (на цветном поле) уменшение/увеличение картинки
+
+основные модификации
+
+от jQuery оставлено только draggable...
+сделан переход на использование CSS-переменных
+"панель управления" может перемещаться мышью (чтоб не мешала просмотру обрезанного)</pre>
+        </div>
         <script>
 
             var pics = {
@@ -685,13 +728,13 @@
                     canvas.getContext("2d").drawImage(pic, x, y, crop_width, crop_height, 0, 0, crop_width, crop_height);
                     var k = crop.id === 0 ? 1.0 : 1.0;
                     let cropped = document.querySelector('#cropped');
-                    
-                    if (cropped.querySelector('#'+crop.id) !== null) {
-                        cropped.querySelector('#'+crop.id).remove();
+
+                    if (cropped.querySelector('#' + crop.id) !== null) {
+                        cropped.querySelector('#' + crop.id).remove();
                     }
-                    
-                    let place=crop.id==='full'?'afterBegin':'beforeEnd';
-                    
+
+                    let place = crop.id === 'full' ? 'afterBegin' : 'beforeEnd';
+
                     cropped.insertAdjacentHTML(place,
                             '<div ><img id="' + crop.id + '" src="' + canvas.toDataURL("image/jpeg", k) + '"><img src="pic/del.png" class="del"  width="18" height="18" alt="del"/></div>');
                     document.getElementById('c1').click();
@@ -811,5 +854,13 @@
             })(document.getElementById('div_head'));
         </script>
 
+        <script>
+            function help() {
+                document.querySelector('#div_help').style.display = 'block';
+            }
+            function close_help() {
+                document.querySelector('#div_help').style.display = 'none';
+            }
+        </script>
     </body>
 </html>
